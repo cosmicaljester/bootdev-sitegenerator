@@ -1,6 +1,5 @@
 __pycache__/
 *.code-workspace
-public/
 silly.py
 test_*
 main.sh

@@ -1,6 +1,12 @@
 from convert import markdown_to_html_node
 import shutil
 import os
+import sys
+
+try:
+    basepath = sys.argv[1]
+except KeyError, IndexError:
+    basepath = '/'
 
 def extract_title(markdown):
     blocks = markdown.split('\n')
@@ -19,23 +25,15 @@ def generate_page(from_path, template_path, dest_path):
         template = templatefile.read()
     node = markdown_to_html_node(markdown).to_html()
     title = extract_title(markdown)
-    temp = template.split('\n')
-    for line in temp:
-        if not line.startswith('    <title>') and not line.startswith('    <article>'):
-            pass
-        elif line.startswith('    <title>'):
-            work = line.split(line[11:22])
-            work.insert(1,title)
-            temp[temp.index(line)] = ''.join(work)
-        elif line.startswith('    <article>'):
-            work = line.split(line[13:26])
-            work.insert(1, node)
-            temp[temp.index(line)] = ''.join(work)
+    template = template.replace('{{ Title }}', title)
+    template = template.replace('{{ Content }}', node)
+    template = template.replace('href="/', f'href="{basepath}')
+    template = template.replace('src="/', f'src="{basepath}')
     path = dest_path.split('/')
     if not os.path.exists('/'.join(path[:-1])):
         os.makedirs('/'.join(path[:-1]), exist_ok=True)
     with open(dest_path, mode='w', encoding='utf-8') as destfile:
-        destfile.write('\n'.join(temp))
+        destfile.write(template)
 
 def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
     static = os.listdir(dir_path_content)
@@ -55,11 +53,11 @@ def copy_static(path=os.getcwd(), target=os.getcwd()):
     if path == os.getcwd():
         if 'src' in os.getcwd():
             os.chdir('..')
-        if os.path.exists('./public'):
-            shutil.rmtree('./public')
-        os.mkdir('./public')
+        if os.path.exists('./docs'):
+            shutil.rmtree('./docs')
+        os.mkdir('./docs')
         newpath = os.path.join(path, 'static')
-        newtarget = os.path.join(target, 'public')
+        newtarget = os.path.join(target, 'docs')
         if copy_static(newpath, newtarget):
             return True
     else:
@@ -79,6 +77,6 @@ def copy_static(path=os.getcwd(), target=os.getcwd()):
 
 def main():
     copy_static()
-    generate_pages_recursive('content', 'template.html', 'public')
+    generate_pages_recursive('content', 'template.html', 'docs')
 
 main()
